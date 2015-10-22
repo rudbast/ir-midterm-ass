@@ -11,9 +11,11 @@ import java.io.Reader;
 import java.io.StringReader;
 
 import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.List;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Tokenizer;
@@ -52,7 +54,7 @@ import org.apache.lucene.store.LockObtainFailedException;
 
 import org.apache.lucene.util.Version;
 
-/**  Use Lucene as a classifier to identify newsgroup given post.
+/**  Use Lucene as a classifier to identify newsgroup given data.
      Parse, index, and evaluate the 20 newsgroups dataset.
  */
 public class ClassifyNewsgroups {
@@ -62,34 +64,14 @@ public class ClassifyNewsgroups {
     public static final Version VERSION = Version.LUCENE_45;
 
     /*x ClassifyNewsgroups.5 */
-    public static final String[] NEWSGROUPS
-        = { "alt.atheism",
-            "comp.graphics",
-            "comp.os.ms-windows.misc",
-    /*x*/
-            "comp.sys.ibm.pc.hardware",
-            "comp.sys.mac.hardware",
-            "comp.windows.x",
-            "misc.forsale",
-            "rec.autos",
-            "rec.motorcycles",
-            "rec.sport.baseball",
-            "rec.sport.hockey",
-            "sci.crypt",
-            "sci.electronics",
-            "sci.med",
-            "sci.space",
-            "soc.religion.christian",
-            "talk.politics.guns",
-            "talk.politics.mideast",
-            "talk.politics.misc",
-            "talk.religion.misc" };
+    public static String[] DATAGROUPS;
 
     private final String mType;
     private final Analyzer mAnalyzer;
 
     public static void main(String[] args)
-        throws IOException, FileNotFoundException {
+        throws IOException, FileNotFoundException
+    {
         if (args.length < 4) {
             System.err.println("usage: ClassifyNewsgroups "
                                + "<trainingData> <indexDir> <testData> <aType>");
@@ -99,6 +81,16 @@ public class ClassifyNewsgroups {
         File trainDir = new File(args[0]);
         File indexDir = new File(args[1]);
         File testDir = new File(args[2]);
+
+        File[] groupsDir = testDir.listFiles();
+
+        List<String> dataGroups = new ArrayList<String>();
+        for (File group : groupsDir) {
+            dataGroups.add(group.getName());
+        }
+
+        DATAGROUPS = new String[dataGroups.size()];
+        DATAGROUPS = dataGroups.toArray(DATAGROUPS);
 
         ClassifyNewsgroups classifier
             = new ClassifyNewsgroups(args[3]);
@@ -113,7 +105,8 @@ public class ClassifyNewsgroups {
 
     /* Instantiate Lucene Analyzer used for search and indexing.
      * Command-line argument specifies Analyzer type */
-    ClassifyNewsgroups(String aType) {
+    ClassifyNewsgroups(String aType)
+    {
         mType = aType.toLowerCase();
 
         if (! ("std".equals(aType)
@@ -152,38 +145,39 @@ public class ClassifyNewsgroups {
         } else  { mAnalyzer = null; }
     }
 
-    /* Iterate over all posts in test set and tabulate results.
+    /* Iterate over all datas in test set and tabulate results.
      * Directory name is newsgroup name.
-     * Each dir contains posts to that newsgroup, 1 post per file.
-     * For each post, do Lucene search over index and
-     * use category of best-matching document to classify post */
+     * Each dir contains datas to that newsgroup, 1 data per file.
+     * For each data, do Lucene search over index and
+     * use category of best-matching document to classify data */
     /*x ClassifyNewsgroups.2 */
     void testIndex(File indexDir, File testDir)
-        throws IOException, FileNotFoundException {
+        throws IOException, FileNotFoundException
+    {
         Directory fsDir = FSDirectory.open(indexDir);
         DirectoryReader reader = DirectoryReader.open(fsDir);
         IndexSearcher searcher = new IndexSearcher(reader);
 
         int[][] confusionMatrix
-            = new int[NEWSGROUPS.length][NEWSGROUPS.length];
+            = new int[DATAGROUPS.length][DATAGROUPS.length];
         File[] groupsDir = testDir.listFiles();
 
         for (File group : groupsDir) {
-            int postCt = 0;
+            int dataCt = 0;
             String groupName = group.getName();
-            int rowIdx = Arrays.binarySearch(NEWSGROUPS,groupName);
-            File[] posts = group.listFiles();
+            int rowIdx = Arrays.binarySearch(DATAGROUPS, groupName);
+            File[] datas = group.listFiles();
 
-            for (File postFile : posts) {
-                postCt++;
-                String number = postFile.getName();
-                NewsPost post = parse(postFile, groupName, number);
+            for (File dataFile : datas) {
+                dataCt++;
+                String number = dataFile.getName();
+                Data data = parse(dataFile, groupName, number);
 
                 BooleanQuery termsQuery
-                    = buildQuery(post.subject()
-                                 + " " + post.body());
+                    = buildQuery(data.subject()
+                                 + " " + data.body());
                 // only get first-best result
-                TopDocs hits = searcher.search(termsQuery,1);
+                TopDocs hits = searcher.search(termsQuery, 1);
                 ScoreDoc[] scoreDocs = hits.scoreDocs;
 
                 for (int n = 0; n < scoreDocs.length; ++n) {
@@ -194,14 +188,14 @@ public class ClassifyNewsgroups {
                     String category = d.get("category");
                     // record result in confusion matrix
                     int colIdx
-                        = Arrays.binarySearch(NEWSGROUPS,category);
+                        = Arrays.binarySearch(DATAGROUPS, category);
                     confusionMatrix[rowIdx][colIdx]++;
                 }
             }
     /*x*/
             System.out.print(groupName);
 
-            for (int i=0; i<NEWSGROUPS.length; i++)
+            for (int i=0; i<DATAGROUPS.length; i++)
                  System.out.printf("| %4d ", confusionMatrix[rowIdx][i]);
 
             System.out.println("|");
@@ -210,7 +204,8 @@ public class ClassifyNewsgroups {
 
     /* Build Lucene query from tokens in text. */
     /*x ClassifyNewsgroups.4 */
-    BooleanQuery buildQuery(String text) throws IOException {
+    BooleanQuery buildQuery(String text) throws IOException
+    {
         BooleanQuery termsQuery = new BooleanQuery();
         Reader textReader = new StringReader(text);
 
@@ -241,47 +236,48 @@ public class ClassifyNewsgroups {
     }
 
     /* Create Lucene index and iterate over
-     * all posts in training set and add to index.
+     * all datas in training set and add to index.
      * Directory name is newsgroup name.
-     * Each dir contains posts to that newsgroup, 1 post per file.
+     * Each dir contains datas to that newsgroup, 1 data per file.
      * Lastly, merge all segments into a single segment. */
     void buildIndex(File indexDir, File trainDir)
-        throws IOException, FileNotFoundException {
+        throws IOException, FileNotFoundException
+    {
         Directory fsDir = FSDirectory.open(indexDir);
         IndexWriterConfig iwConf
             = new IndexWriterConfig(VERSION,mAnalyzer);
 
         iwConf.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
         IndexWriter indexWriter
-            = new IndexWriter(fsDir,iwConf);
+            = new IndexWriter(fsDir, iwConf);
 
         File[] groupsDir = trainDir.listFiles();
         for (File group : groupsDir) {
 
-            int postCt = 0;
+            int dataCt = 0;
             String groupName = group.getName();
-            File[] posts = group.listFiles();
+            File[] datas = group.listFiles();
 
-            for (File postFile : posts) {
-                String number = postFile.getName();
+            for (File dataFile : datas) {
+                String number = dataFile.getName();
 
                 /*x ClassifyNewsgroups.1 */
-                NewsPost post = parse(postFile, groupName, number);
+                Data data = parse(dataFile, groupName, number);
 
                 Document d = new Document();
 
                 d.add(new StringField("category",
-                                      post.group(),Store.YES));
+                                      data.group(),Store.YES));
                 d.add(new TextField("text",
-                                    post.subject(),Store.NO));
+                                    data.subject(),Store.NO));
                 d.add(new TextField("text",
-                                    post.body(),Store.NO));
+                                    data.body(),Store.NO));
                 indexWriter.addDocument(d);
 
                 /*x*/
-                postCt++;
+                dataCt++;
             }
-            System.out.println("training items for " + groupName + ": " + postCt);
+            System.out.println("training items for " + groupName + ": " + dataCt);
 
         }
 
@@ -295,9 +291,10 @@ public class ClassifyNewsgroups {
         System.out.println("num docs=" + numDocs);
     }
 
-    /* Construct NewsPost object from newsgroup post data file. */
-    NewsPost parse(File inFile, String newsgroup, String number)
-        throws IOException, FileNotFoundException {
+    /* Construct Data object from newsgroup data data file. */
+    Data parse(File inFile, String newsgroup, String number)
+        throws IOException, FileNotFoundException
+    {
         FileInputStream inStream = null;
         InputStreamReader inReader = null;
         BufferedReader bufReader = null;
@@ -330,7 +327,7 @@ public class ClassifyNewsgroups {
                 body.append(line + " ");
                 lines++;
             }
-            return new NewsPost(newsgroup,number,subject,body.toString());
+            return new Data(newsgroup,number,subject,body.toString());
         } finally {
             close(bufReader);
             close(inReader);
@@ -338,7 +335,8 @@ public class ClassifyNewsgroups {
         }
     }
 
-    void close(Closeable c) {
+    void close(Closeable c)
+    {
         if (c == null) return;
         try {
             c.close();
@@ -347,14 +345,15 @@ public class ClassifyNewsgroups {
         }
     }
 
-    /* Domain model for one news post from 20news dataset. */
-    static class NewsPost {
+    /* Domain model for one news data from 20news dataset. */
+    static class Data
+    {
         private final String mGroup;
         private final String mNumber;
         private final String mSubject;
         private final String mBody;
 
-        public NewsPost (String group,
+        public Data (String group,
                          String number,
                          String subject,
                          String body) {
