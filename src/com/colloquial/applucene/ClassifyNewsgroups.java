@@ -91,6 +91,7 @@ public class ClassifyNewsgroups {
 
         DATAGROUPS = new String[dataGroups.size()];
         DATAGROUPS = dataGroups.toArray(DATAGROUPS);
+        Arrays.sort(DATAGROUPS);
 
         ClassifyNewsgroups classifier
             = new ClassifyNewsgroups(args[3]);
@@ -162,10 +163,14 @@ public class ClassifyNewsgroups {
             = new int[DATAGROUPS.length][DATAGROUPS.length];
         File[] groupsDir = testDir.listFiles();
 
+        Arrays.sort(groupsDir);
+
         for (File group : groupsDir) {
             int dataCt = 0;
+
             String groupName = group.getName();
             int rowIdx = Arrays.binarySearch(DATAGROUPS, groupName);
+
             File[] datas = group.listFiles();
 
             for (File dataFile : datas) {
@@ -192,14 +197,36 @@ public class ClassifyNewsgroups {
                     confusionMatrix[rowIdx][colIdx]++;
                 }
             }
-    /*x*/
-            System.out.print(groupName);
-
-            for (int i=0; i<DATAGROUPS.length; i++)
-                 System.out.printf("| %4d ", confusionMatrix[rowIdx][i]);
-
-            System.out.println("|");
         }
+
+        System.out.println("Confusion Matrix:\n");
+
+        System.out.printf("%12s", "");
+        for(int i = 0; i < DATAGROUPS.length; i++)
+            System.out.printf("%12s", DATAGROUPS[i]);
+        System.out.println();
+
+        int fc = 0, tc = 0;
+
+        for(int i = 0; i < DATAGROUPS.length; i++){
+            System.out.printf("%12s", DATAGROUPS[i]);
+
+            for(int j = 0; j < DATAGROUPS.length; j++){
+                System.out.printf("%12d", confusionMatrix[i][j]);
+                if(i == j){
+                    tc += confusionMatrix[i][j];
+                }
+                else{
+                    fc += confusionMatrix[i][j];
+                }
+            }
+            System.out.println();
+        }
+
+        float accrate = (float)tc / (float)(tc + fc);
+        float errrate = (float)fc / (float)(tc + fc);
+
+        System.out.printf("\nAccuracy rate = %f, Error rate = %f\n", accrate, errrate);
     }
 
     /* Build Lucene query from tokens in text. */
