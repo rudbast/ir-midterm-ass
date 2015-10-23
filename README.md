@@ -29,11 +29,11 @@ $ ant classify
 
 Modify the <property> inside `build.xml` to suit your needs for the classification method, you can also modify the train/test/index folders location if you really need to, else just paste in your data inside the provided location.
 
-Available classification method:
+Available classification methods:
 
-- `std`, uses StandardAnalyzer
-- `lc`, uses LowerCaseFilter
-- `ngram`, uses NGramTokenizer
+- `std`, uses `StandardAnalyzer`
+- `lc`, uses `LowerCaseFilter`
+- `ngram`, uses `NGramTokenizer`
 
 ## License
 
