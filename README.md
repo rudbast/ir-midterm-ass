@@ -27,9 +27,9 @@ $ ant clean-index
 $ ant classify
 ```
 
-Modify the <property> inside `build.xml` to suit your needs for the classification method, you can also modify the train/test/index folders location if you really need to, else just paste in your data inside the provided location.
+Modify the <property> inside `build.xml` to suit your needs for the analyzer method, you can also modify the train/test/index folders location if you really need to, else just paste in your data inside the provided location.
 
-Available classification methods:
+Available analyzer methods:
 
 - `std`, uses `StandardAnalyzer`
 - `lc`, uses `LowerCaseFilter`
