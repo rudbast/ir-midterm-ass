@@ -31,9 +31,9 @@ Modify the <property> inside `build.xml` to suit your needs for the classificati
 
 Available classification method:
 
-- 'std', uses StandardAnalyzer
-- 'lc', uses LowerCaseFilter
-- 'ngram', uses NGramTokenizer
+- `std`, uses StandardAnalyzer
+- `lc`, uses LowerCaseFilter
+- `ngram`, uses NGramTokenizer
 
 ## License
 
