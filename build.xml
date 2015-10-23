@@ -47,7 +47,7 @@
     <property name="index.dir"
               value="data/index"/>
     <property name="analyzer"
-              value="lc"/>
+              value="std"/>
     <target name="classify"
             depends="jar">
         <java classname="com.colloquial.applucene.ClassifyNewsgroups"
