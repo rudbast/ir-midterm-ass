@@ -179,8 +179,7 @@ public class ClassifyNewsgroups {
                 Data data = parse(dataFile, groupName, number);
 
                 BooleanQuery termsQuery
-                    = buildQuery(data.subject()
-                                 + " " + data.body());
+                    = buildQuery(data.body());
                 // only get first-best result
                 TopDocs hits = searcher.search(termsQuery, 1);
                 ScoreDoc[] scoreDocs = hits.scoreDocs;
@@ -296,8 +295,6 @@ public class ClassifyNewsgroups {
                 d.add(new StringField("category",
                                       data.group(),Store.YES));
                 d.add(new TextField("text",
-                                    data.subject(),Store.NO));
-                d.add(new TextField("text",
                                     data.body(),Store.NO));
                 indexWriter.addDocument(d);
 
@@ -331,20 +328,20 @@ public class ClassifyNewsgroups {
             inReader = new InputStreamReader(inStream,ENCODING);
             bufReader = new BufferedReader(inReader);
 
-            String subject = null;
+            // String subject = null;
 
             // read from beginning of file to end of header - 1st blank line
             String line = null;
-            while ((line = bufReader.readLine()) != null) {
-                // parse out subject from Subject line
-                if (line.startsWith("Subject:")) {
-                    subject = line.substring("Subject:".length());
-                } else {
-                    if (line.length() == 0) break;
-                }
-            }
-            if (line == null)
-                throw new IOException("unexpected EOF");
+            // while ((line = bufReader.readLine()) != null) {
+            //     // parse out subject from Subject line
+            //     if (line.startsWith("Subject:")) {
+            //         subject = line.substring("Subject:".length());
+            //     } else {
+            //         if (line.length() == 0) break;
+            //     }
+            // }
+            // if (line == null)
+            //     throw new IOException("unexpected EOF");
 
             // remaining lines are message body
             StringBuilder body = new StringBuilder();
@@ -354,7 +351,7 @@ public class ClassifyNewsgroups {
                 body.append(line + " ");
                 lines++;
             }
-            return new Data(newsgroup,number,subject,body.toString());
+            return new Data(newsgroup,number,body.toString());
         } finally {
             close(bufReader);
             close(inReader);
@@ -377,21 +374,17 @@ public class ClassifyNewsgroups {
     {
         private final String mGroup;
         private final String mNumber;
-        private final String mSubject;
         private final String mBody;
 
         public Data (String group,
                          String number,
-                         String subject,
                          String body) {
             mGroup = group;
             mNumber = number;
-            mSubject = subject;
             mBody = body;
         }
         public String group() { return mGroup; }
         public String number() { return mNumber; }
-        public String subject() { return mSubject; }
         public String body() { return mBody; }
     }
 
